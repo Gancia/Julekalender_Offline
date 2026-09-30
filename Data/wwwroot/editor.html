@@ -567,7 +567,30 @@ function updateQuizValue(index, field, value) {
 }
 
 function updateQuizOption(blockIndex, optIndex, value) {
-    currentBlocks[index].value.options[optIndex] = value;
+    currentBlocks[blockIndex].value.options[optIndex] = value;
+}
+
+function addQuizOption(blockIndex) {
+    if (currentBlocks[blockIndex].value.options.length < 4) {
+        currentBlocks[blockIndex].value.options.push('Nyt svar');
+        renderBlocks();
+    } else {
+        alert("Du kan maksimalt have 4 svarmuligheder.");
+    }
+}
+
+function removeQuizOption(blockIndex, optIndex) {
+    if (currentBlocks[blockIndex].value.options.length > 2) {
+        currentBlocks[blockIndex].value.options.splice(optIndex, 1);
+        if (currentBlocks[blockIndex].value.correctIndex === optIndex) {
+            currentBlocks[blockIndex].value.correctIndex = 0;
+        } else if (currentBlocks[blockIndex].value.correctIndex > optIndex) {
+            currentBlocks[blockIndex].value.correctIndex--;
+        }
+        renderBlocks();
+    } else {
+        alert("Du skal minimum have 2 svarmuligheder.");
+    }
 }
 
 function renderBlocks() {
@@ -628,7 +651,8 @@ function renderBlocks() {
                 optsHtml += `
                     <div class="quiz-option">
                         <input type="radio" name="quiz_correct_${index}" ${optIndex === block.value.correctIndex ? 'checked' : ''} onchange="currentBlocks[${index}].value.correctIndex = ${optIndex}">
-                        <input type="text" value="${opt}" onchange="currentBlocks[${index}].value.options[${optIndex}] = this.value" placeholder="Svarmulighed">
+                        <input type="text" value="${opt}" onchange="updateQuizOption(${index}, ${optIndex}, this.value)" placeholder="Svarmulighed">
+                        <button type="button" class="btn-remove" style="background:#dc3545;" onclick="removeQuizOption(${index}, ${optIndex})" title="Slet mulighed">✖</button>
                     </div>
                 `;
             });
@@ -636,8 +660,9 @@ function renderBlocks() {
             body = `
                 <label>Spørgsmål</label>
                 <div class="wysiwyg-editor" style="min-height: 40px; margin-bottom: 10px;" contenteditable="true" onblur="currentBlocks[${index}].value.question = this.innerHTML">${block.value.question}</div>
-                <label>Svarmuligheder (vælg det rigtige svar)</label>
+                <label>Svarmuligheder (vælg det rigtige svar med knappen til venstre)</label>
                 ${optsHtml}
+                ${block.value.options.length < 4 ? `<button type="button" class="format-btn" style="margin-bottom:10px; color:#007a7c; font-weight:bold;" onclick="addQuizOption(${index})">+ Tilføj svarmulighed</button>` : ''}
                 <label style="margin-top: 10px;">Godt klaret-besked (vises når de svarer rigtigt)</label>
                 <div class="wysiwyg-editor" style="min-height: 40px;" contenteditable="true" onblur="currentBlocks[${index}].value.explanation = this.innerHTML">${block.value.explanation}</div>
             `;

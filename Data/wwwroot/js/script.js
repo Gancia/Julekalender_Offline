@@ -341,20 +341,15 @@ function handleQuizAnswer(buttonElement, isCorrect) {
     const feedbackEl = quizBlock.querySelector('.quiz-feedback');
     const explanation = decodeURIComponent(quizBlock.dataset.explanation).replace(/\n/g, '<br>');
 
-    options.forEach(option => {
-        option.disabled = true;
-    });
-
-    buttonElement.classList.add(isCorrect ? 'correct' : 'incorrect');
-    if (!isCorrect) {
-        options.forEach(option => {
-            if (option.dataset.isCorrect === 'true') {
-                option.classList.add('correct');
-            }
-        });
+    if (isCorrect) {
+        options.forEach(option => { option.disabled = true; });
+        buttonElement.classList.add('correct');
+        feedbackEl.innerHTML = `<div class="quiz-explanation" style="border-left-color: #28a745;">${explanation}</div>`;
+    } else {
+        buttonElement.classList.add('incorrect');
+        // Do not disable buttons so they can try again!
+        feedbackEl.innerHTML = `<div class="quiz-explanation" style="border-left-color: #d8232a; background: #fff5f5;">Desværre, det var ikke det rigtige svar. Prøv igen! 🎅</div>`;
     }
-
-    feedbackEl.innerHTML = `<div class="quiz-explanation">${explanation}</div>`;
 }
 
 /**
