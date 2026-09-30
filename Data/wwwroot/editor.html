@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jule-Værkstedet</title>
+    <link rel="icon" href="assets/tree.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #007a7c;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        input[type="text"], input[type="number"], select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        input[type="file"] {
+            display: block;
+            margin-top: 10px;
+        }
+        .emoji-select-btn {
+            width: 100%;
+            padding: 12px;
+            background: #f1f3f5;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: bold;
+            color: #333;
+            transition: all 0.2s;
+        }
+        .emoji-select-btn:hover {
+            background: #e9ecef;
+            border-color: #007a7c;
+        }
+        .full-emoji-picker {
+            margin-top: 10px;
+            border: 2px solid #007a7c;
+            border-radius: 6px;
+            background: white;
+            padding: 10px;
+            max-height: 250px;
+            overflow-y: auto;
+        }
+        .emoji-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+            gap: 5px;
+        }
+        .emoji-list span {
+            font-size: 30px;
+            cursor: pointer;
+            text-align: center;
+            padding: 5px;
+            border-radius: 6px;
+            transition: transform 0.1s, background 0.1s;
+        }
+        .emoji-list span:hover {
+            background: #f0f4f8;
+            transform: scale(1.2);
+        }
+        .content-hidden {
+            display: none;
+        }
+        button.save-btn {
+            width: 100%;
+            padding: 15px;
+            background-color: #007a7c;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button.save-btn:hover {
+            background-color: #005f60;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: bold;
+            display: none;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #ddd;
+            margin-bottom: 20px;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 15px;
+            background: none;
+            border: none;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            color: #666;
+        }
+        .tab-btn.active {
+            color: #007a7c;
+            border-bottom: 3px solid #007a7c;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .btn-block {
+            background: #e9ecef;
+            border: 1px solid #ccc;
+            padding: 10px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            flex: 1;
+            min-width: 120px;
+        }
+        .btn-block:hover { background: #dde0e3; }
+        .block {
+            background: #fafafa;
+            border: 2px solid #ddd;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+        }
+        .block-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+        }
+        .drag-handle {
+            cursor: grab;
+            margin-right: 10px;
+            font-size: 20px;
+        }
+        .btn-remove {
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .wysiwyg-editor {
+            min-height: 80px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 4px;
+            background: white;
+            margin-top: 5px;
+        }
+        .formatting-toolbar {
+            display: flex;
+            gap: 5px;
+        }
+        .format-btn {
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .format-btn:hover { background: #f0f0f0; }
+        .quiz-option {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 5px;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🎄 Jule-Værkstedet 🎄</h1>
+    <p style="text-align: center; color: #666; margin-top: -20px; margin-bottom: 30px;">Her bygger du din julekalender!</p>
+    
+    <div class="tabs">
+        <button id="btn-tab-låge" class="tab-btn active" onclick="switchTab('låge')">Låger</button>
+        <button id="btn-tab-config" class="tab-btn" onclick="switchTab('config')">Avancerede Indstillinger</button>
+    </div>
+
+    <div id="tab-låge" class="tab-content active">
+        <div class="form-group">
+            <label>Hvilken dag (1-24)?</label>
+            <select id="door-day" onchange="loadDoor(this.value)">
+                <script>
+                    for(let i=1; i<=24; i++) {
+                        document.write(`<option value="${i}">Låge ${i}</option>`);
+                    }
+                    
+
+                </script>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Titel på lågen</label>
+            <input type="text" id="door-title" placeholder="F.eks. Julemandens Værksted">
+        </div>
+
+    <div class="form-group">
+        <label>Vælg en Emoji til lågen</label>
+        <button type="button" class="emoji-select-btn" onclick="toggleEmojiPicker()">😀 Klik her for at vælge en emoji</button>
+        
+        <div id="full-emoji-picker" class="full-emoji-picker content-hidden">
+            <div id="emoji-list" class="emoji-list"></div>
+        </div>
+
+        <input type="hidden" id="door-emoji" value="🎁">
+        <div id="selected-emoji-preview" style="font-size: 40px; text-align: center; margin-top: 15px;">🎁</div>
+    </div>
+
+    <hr style="border: 1px solid #ddd; margin: 30px 0;">
+    <h2 style="color: #007a7c;">Indhold (Byggeklodser)</h2>
+    <div id="content-blocks"></div>
+    <div class="add-block-buttons" style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+        <button type="button" onclick="addBlock('text')" class="btn-block">📝 Tekst</button>
+        <button type="button" onclick="addBlock('image')" class="btn-block">🖼️ Billede / Video (fil)</button>
+        <button type="button" onclick="addBlock('video')" class="btn-block">🎥 YouTube</button>
+        <button type="button" onclick="addBlock('quiz')" class="btn-block">❓ Quiz</button>
+    </div>
+
+    <button class="save-btn" onclick="saveDoor()">Gem Lågen!</button>
+    </div> <!-- Afslutter tab-låge -->
+
+    <div id="tab-config" class="tab-content">
+        <div class="form-group">
+            <label>Julekalenderens Titel</label>
+            <input type="text" id="config-maintitle" placeholder="F.eks. Min Julekalender">
+        </div>
+        <div class="form-group">
+            <label>Undertitel</label>
+            <input type="text" id="config-subtitle" placeholder="F.eks. Lavet af 2.A">
+        </div>
+        <div class="form-group">
+            <label>Test-tilstand (Tillad at åbne låger før tid)</label>
+            <select id="config-testmode">
+                <option value="true">Ja (Test-tilstand aktiv)</option>
+                <option value="false">Nej (Låger åbnes kun på dagen)</option>
+            </select>
+        </div>
+        
+        <div class="form-group" style="background: #f9f9f9; border: 1px solid #ddd; padding: 15px; border-radius: 8px;">
+            <label>Farver</label>
+            <div style="font-size: 14px; color: #555; margin-bottom: 10px;">Gør kalenderen personlig med jeres egne farver:</div>
+            
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 10px;">
+                <label style="width: 150px; margin: 0;">Baggrundsfarve:</label>
+                <input type="color" id="config-bgcolor" value="#005a5b" style="width: 50px; height: 30px; padding: 0; border: none;">
+                <button type="button" onclick="document.getElementById('config-bgcolor').value='#005a5b'" style="background: #fff; border: 1px solid #ccc; color: #333; padding: 2px 8px; border-radius: 4px; cursor: pointer;">Nulstil</button>
+            </div>
+            
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 10px;">
+                <label style="width: 150px; margin: 0;">Lågefarve:</label>
+                <input type="color" id="config-doorcolor" value="#fefae0" style="width: 50px; height: 30px; padding: 0; border: none;">
+                <button type="button" onclick="document.getElementById('config-doorcolor').value='#fefae0'" style="background: #fff; border: 1px solid #ccc; color: #333; padding: 2px 8px; border-radius: 4px; cursor: pointer;">Nulstil</button>
+            </div>
+            
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                <label style="width: 150px; margin: 0;">Tal-farve (1-24):</label>
+                <input type="color" id="config-doortextcolor" value="#582f0e" style="width: 50px; height: 30px; padding: 0; border: none;">
+                <button type="button" onclick="document.getElementById('config-doortextcolor').value='#582f0e'" style="background: #fff; border: 1px solid #ccc; color: #333; padding: 2px 8px; border-radius: 4px; cursor: pointer;">Nulstil</button>
+            </div>
+        </div>
+        <div class="form-group" style="background: #f9f9f9; border: 1px solid #ddd; padding: 15px; border-radius: 8px;">
+            <label>Vis Snevejr (Drys fra toppen)</label>
+            <select id="config-snow" style="margin-bottom: 10px;">
+                <option value="true">Ja</option>
+                <option value="false">Nej</option>
+            </select>
+            
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 10px;">
+                <label style="width: 150px; margin: 0;">Sne-mængde:</label>
+                <select id="config-snowamount" style="width: 120px;">
+                    <option value="25">Lidt</option>
+                    <option value="75">Normal</option>
+                    <option value="150">Mange</option>
+                    <option value="300">Snestorm!</option>
+                </select>
+            </div>
+
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 10px;">
+                <label style="width: 150px; margin: 0;">Sne-hastighed:</label>
+                <select id="config-snowspeed" style="width: 120px;">
+                    <option value="1.5">Langsomt</option>
+                    <option value="1.0">Normalt</option>
+                    <option value="0.5">Hurtigt</option>
+                </select>
+            </div>
+
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                <label style="width: 150px; margin: 0;">Sne-farve:</label>
+                <input type="color" id="config-snowcolor" value="#ffffff" style="width: 50px; height: 30px; padding: 0; border: none;">
+                <button type="button" onclick="document.getElementById('config-snowcolor').value='#ffffff'" style="background: #fff; border: 1px solid #ccc; color: #333; padding: 2px 8px; border-radius: 4px; cursor: pointer;">Nulstil</button>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Vis Snedriver (I bunden af kalenderen)</label>
+            <select id="config-snowdrift">
+                <option value="true">Ja</option>
+                <option value="false">Nej</option>
+            </select>
+        </div>
+        <div class="form-group" style="background: #f9f9f9; border: 1px solid #ddd; padding: 15px; border-radius: 8px;">
+            <label>Låger i gitteret</label>
+            <div style="font-size: 14px; color: #555; margin-bottom: 10px;">Bestem hvordan numrene 1-24 placeres på forsiden:</div>
+            <button class="btn-remove" type="button" style="background-color: #f39c12; color: white; padding: 10px; margin-right: 5px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;" onclick="shuffleDoors()">🎲 Bland lågerne tilfældigt!</button>
+            <button class="btn-remove" type="button" style="background-color: #3498db; color: white; padding: 10px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;" onclick="resetDoors()">🔢 Sæt dem i rækkefølge (1-24)</button>
+        </div>
+        <button class="save-btn" onclick="saveConfig()">Gem Indstillinger ⚙️</button>
+    </div> <!-- Afslutter tab-config -->
+
+    <div id="status" class="status"></div>
+    <br>
+    <div style="text-align: center;">
+        <a href="index.html" style="color: #007a7c; font-weight: bold;">Gå tilbage til kalenderen</a>
+    </div>
+</div>
+
+<script>
+    // Tab switching logic
+    function switchTab(tabId) {
+        document.getElementById('btn-tab-låge').classList.remove('active');
+        document.getElementById('btn-tab-config').classList.remove('active');
+        document.getElementById('tab-låge').classList.remove('active');
+        document.getElementById('tab-config').classList.remove('active');
+        
+        document.getElementById('btn-tab-' + tabId).classList.add('active');
+        document.getElementById('tab-' + tabId).classList.add('active');
+        
+        if (tabId === 'config') {
+            loadConfig();
+        }
+    }
+
+    let currentDoorOrder = null;
+
+    async function loadConfig() {
+        try {
+            const res = await fetch('/api/config');
+            if (res.ok) {
+                const config = await res.json();
+                if (config.mainTitle) document.getElementById('config-maintitle').value = config.mainTitle;
+                if (config.subtitle) document.getElementById('config-subtitle').value = config.subtitle;
+                if (config.isTestMode !== undefined) document.getElementById('config-testmode').value = config.isTestMode.toString();
+                if (config.showSnowfall !== undefined) document.getElementById('config-snow').value = config.showSnowfall.toString();
+                if (config.showSnowdrift !== undefined) document.getElementById('config-snowdrift').value = config.showSnowdrift.toString();
+                if (config.doorOrder) currentDoorOrder = config.doorOrder;
+                if (config.bgColor) document.getElementById('config-bgcolor').value = config.bgColor;
+                if (config.doorColor) document.getElementById('config-doorcolor').value = config.doorColor;
+                if (config.doorTextColor) document.getElementById('config-doortextcolor').value = config.doorTextColor;
+                if (config.snowAmount) document.getElementById('config-snowamount').value = config.snowAmount.toString();
+                if (config.snowSpeed) document.getElementById('config-snowspeed').value = config.snowSpeed.toString();
+                if (config.snowColor) document.getElementById('config-snowcolor').value = config.snowColor;
+            }
+        } catch(e) {
+            console.error("Fejl ved indlæsning", e);
+        }
+    }
+
+    function shuffleDoors() {
+        // Genererer en tilfældig rækkefølge af 1-24
+        let array = Array.from({length: 24}, (_, i) => i + 1);
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        currentDoorOrder = array;
+        alert("Lågerne er nu blandet! Tryk på 'Gem Indstillinger' for at gemme ændringerne.");
+    }
+
+    function resetDoors() {
+        currentDoorOrder = Array.from({length: 24}, (_, i) => i + 1);
+        alert("Lågerne er nu sat i rækkefølge fra 1-24! Tryk på 'Gem Indstillinger' for at gemme.");
+    }
+
+    async function saveConfig() {
+        const config = {
+            mainTitle: document.getElementById('config-maintitle').value,
+            subtitle: document.getElementById('config-subtitle').value,
+            isTestMode: document.getElementById('config-testmode').value === 'true',
+            showSnowfall: document.getElementById('config-snow').value === 'true',
+            showSnowdrift: document.getElementById('config-snowdrift').value === 'true',
+            bgColor: document.getElementById('config-bgcolor').value,
+            doorColor: document.getElementById('config-doorcolor').value,
+            doorTextColor: document.getElementById('config-doortextcolor').value,
+            snowAmount: document.getElementById('config-snowamount').value,
+            snowSpeed: document.getElementById('config-snowspeed').value,
+            snowColor: document.getElementById('config-snowcolor').value
+        };
+        if (currentDoorOrder) {
+            config.doorOrder = currentDoorOrder;
+        }
+
+        try {
+            const response = await fetch('/api/config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(config)
+            });
+
+            const status = document.getElementById('status');
+            status.style.display = 'block';
+            
+            if(response.ok) {
+                status.className = 'status success';
+                status.textContent = 'Indstillinger blev gemt! Opdater julekalenderen for at se ændringerne.';
+                setTimeout(() => { status.style.display = 'none'; }, 5000);
+            } else {
+                status.className = 'status error';
+                status.textContent = 'Fejl: Kunne ikke gemme indstillinger.';
+            }
+        } catch(e) {
+            const status = document.getElementById('status');
+            status.style.display = 'block';
+            status.className = 'status error';
+            status.textContent = 'Forbindelsesfejl til serveren.';
+        }
+    }
+
+    const ALL_EMOJIS = "😀 😃 😄 😁 😆 😅 🤣 😂 🙂 🙃 😉 😊 😇 🥰 😍 🤩 😘 😗 😚 😙 😋 😛 😜 🤪 😝 🤑 🤗 🤭 🤫 🤔 🤐 🤨 😐 😑 😶 😏 😒 🙄 😬 🤥 😌 😔 😪 🤤 😴 😷 🤒 🤕 🤢 🤮 🤧 🥵 🥶 🥴 😵 🤯 🤠 🥳 😎 🤓 🧐 😕 😟 🙁 ☹️ 😮 😯 😲 😳 🥺 😦 😧 😨 😰 😥 😢 😭 😱 😖 😣 😞 😓 😩 😫 🥱 😤 😡 😠 🤬 😈 👿 💀 ☠️ 💩 🤡 👹 👺 👻 👽 👾 🤖 🎃 😺 😸 😹 😻 😼 😽 🙀 😿 😾 🐶 🐱 🐭 🐹 🐰 🦊 🐻 🐼 🐨 🐯 🦁 🐮 🐷 🐽 🐸 🐵 🙈 🙉 🙊 🐒 🐔 🐧 🐦 🐤 🐣 🐥 🦆 🦅 🦉 🦇 🐺 🐗 🐴 🦄 🐝 🐛 🦋 🐌 🐞 🐜 🦟 🦗 🕷 🕸 🦂 🐢 🐍 🦎 🦖 🦕 🐙 🦑 🦐 🦞 🦀 🐡 🐠 🐟 🐬 🐳 🐋 🦈 🐊 🐅 🐆 🦓 🦍 🦧 🐘 🦛 🦏 🐪 🐫 🦒 🦘 🐃 🐂 🐄 🐎 🐖 🐏 🐑 🦙 🐐 🦌 🐕 🐩 🦮 🐕‍🦺 🐈 🐓 🦃 🦚 🦜 🦢 🦩 🕊 🐇 🦝 🦨 🦡 🦦 🦥 🐁 🐀 🐿 🦔 🍏 🍎 🍐 🍊 🍋 🍌 🍉 🍇 🍓 🍈 🍒 🍑 🥭 🍍 🥥 🥝 🍅 🍆 🥑 🥦 🥬 🥒 🌶 🌽 🥕 🧄 🧅 🥔 🍠 🥐 🥯 🍞 🥖 🥨 🧀 🥚 🍳 🧈 🥞 🧇 🥓 🥩 🍗 🍖 🌭 🍔 🍟 🍕 🥪 🥙 🧆 🌮 🌯 🥗 🥘 🥫 🍝 🍜 🍲 🍛 🍣 🍱 🥟 🦪 🍤 🍙 🍚 🍘 🍥 🥠 🥮 🍢 🍡 🍧 🍨 🍦 🥧 🧁 🍰 🎂 🍮 🍭 🍬 🍫 🍿 🍩 🍪 🌰 🥜 🍯 🥛 🍼 ☕️ 🍵 🧃 🥤 🍶 🍺 🍻 🥂 🍷 🥃 🍸 🍹 🧉 🍾 🧊 🥄 🍴 🍽 🥣 🥡 🥢 ⚽ 🏀 🏈 ⚾ 🥎 🎾 🏐 🏉 🥏 🎱 🪀 🏓 🏸 🏒 🏑 🥍 🏏 🥅 ⛳ 🪁 🏹 🎣 🤿 🥊 🥋 🎽 🛹 🛷 ⛸ 🥌 🎿 ⛷ 🏂 🪂 🏋️ 🤼 🤸 ⛹️ 🤺 🤾 🏌️ 🏇 🧘 🏄 🏊 🤽 🚣 🧗 🚵 🚴 🏆 🥇 🥈 🥉 🏅 🎖 🏵 🎗 🎫 🎟 🎪 🤹 🎭 🩰 🎨 🎬 🎤 🎧 🎼 🎹 🥁 🎷 🎺 🎸 🪕 🎻 🎲 🧩 🎮 🕹 🎰 🎅 🤶 🧑‍🎄 🎄 🎁 ⛄ ❄️ 🦌 🕯️ 🔔 🌟 🧣 🧤 🧥".split(" ");
+    
+    // Initialize emoji list
+    const emojiList = document.getElementById('emoji-list');
+    ALL_EMOJIS.forEach(emoji => {
+        if(!emoji) return;
+        const span = document.createElement('span');
+        span.textContent = emoji;
+        span.onclick = () => setEmoji(emoji);
+        emojiList.appendChild(span);
+    });
+
+    function toggleEmojiPicker() {
+        const picker = document.getElementById('full-emoji-picker');
+        if(picker.classList.contains('content-hidden')) {
+            picker.classList.remove('content-hidden');
+        } else {
+            picker.classList.add('content-hidden');
+        }
+    }
+
+    function setEmoji(emoji) {
+        document.getElementById('door-emoji').value = emoji;
+        document.getElementById('selected-emoji-preview').textContent = emoji;
+        document.getElementById('full-emoji-picker').classList.add('content-hidden');
+    }
+
+    // Blocks array
+let currentBlocks = [];
+
+function clearDoorForm() {
+    document.getElementById('door-title').value = '';
+    setEmoji('🎁');
+    currentBlocks = [];
+    renderBlocks();
+}
+
+async function loadDoor(day) {
+    clearDoorForm();
+    try {
+        const res = await fetch('/api/door/' + day);
+        if (res.ok) {
+            const data = await res.json();
+            if(data.title && !data.title.includes('. december')) {
+                document.getElementById('door-title').value = data.title;
+            }
+            if(data.emoji) {
+                setEmoji(data.emoji);
+            }
+            if(data.body && data.body.length > 0) {
+                // Map the server blocks to our editable blocks
+                currentBlocks = data.body.map(block => {
+                    if (block.type === 'html' || block.type === 'text') return { type: 'text', value: block.value };
+                    if (block.type === 'image' || block.type === 'video' && !block.value.includes('youtube.com')) {
+                        return { type: 'file', value: block.value, file: null };
+                    }
+                    if (block.type === 'video' && block.value.includes('youtube.com')) return { type: 'video', value: block.value };
+                    if (block.type === 'quiz') return { type: 'quiz', value: block.value };
+                    return block;
+                });
+            }
+            renderBlocks();
+        }
+    } catch(e) {
+        console.error("Kunne ikke hente låge", e);
+    }
+}
+
+// Automatically load day 1 on boot
+window.addEventListener('DOMContentLoaded', () => {
+    loadDoor(1);
+});
+
+function addBlock(type) {
+    let newBlock = { type: type, value: '' };
+    if (type === 'quiz') {
+        newBlock.value = { question: 'Hvad er...', options: ['Svar 1', 'Svar 2'], correctIndex: 0, explanation: 'Godt klaret!' };
+    }
+    currentBlocks.push(newBlock);
+    renderBlocks();
+}
+
+function removeBlock(index) {
+    if(confirm('Er du sikker på du vil fjerne denne byggeklods?')) {
+        currentBlocks.splice(index, 1);
+        renderBlocks();
+    }
+}
+
+function moveBlock(index, dir) {
+    if (index + dir < 0 || index + dir >= currentBlocks.length) return;
+    const temp = currentBlocks[index];
+    currentBlocks[index] = currentBlocks[index + dir];
+    currentBlocks[index + dir] = temp;
+    renderBlocks();
+}
+
+function updateBlockValue(index, newValue) {
+    currentBlocks[index].value = newValue;
+}
+
+function updateQuizValue(index, field, value) {
+    currentBlocks[index].value[field] = value;
+}
+
+function updateQuizOption(blockIndex, optIndex, value) {
+    currentBlocks[index].value.options[optIndex] = value;
+}
+
+function renderBlocks() {
+    const container = document.getElementById('content-blocks');
+    container.innerHTML = '';
+    
+    if (currentBlocks.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #888;">Ingen byggeklodser endnu. Tilføj en tekst, et billede, en video eller en quiz nedenfor!</p>';
+        return;
+    }
+    
+    currentBlocks.forEach((block, index) => {
+        const div = document.createElement('div');
+        div.className = 'block';
+        
+        let title = '';
+        if (block.type === 'text') title = '📝 Tekst';
+        if (block.type === 'file') title = '🖼️ Billede / Video (fil)';
+        if (block.type === 'video') title = '🎥 YouTube Video';
+        if (block.type === 'quiz') title = '❓ Quiz';
+        
+        let header = `
+            <div class="block-header">
+                <div>
+                    <span class="drag-handle" onclick="moveBlock(${index}, -1)" title="Flyt Op">⬆️</span>
+                    <span class="drag-handle" onclick="moveBlock(${index}, 1)" title="Flyt Ned">⬇️</span>
+                    <strong>${title}</strong>
+                </div>
+                <button class="btn-remove" onclick="removeBlock(${index})">Slet</button>
+            </div>
+        `;
+        
+        let body = '';
+        if (block.type === 'text') {
+            body = `
+                <div class="formatting-toolbar">
+                    <button type="button" class="format-btn" onclick="document.execCommand('bold',false,null)"><b>B</b></button>
+                    <button type="button" class="format-btn" onclick="document.execCommand('italic',false,null)"><i>I</i></button>
+                    <button type="button" class="format-btn" onclick="document.execCommand('underline',false,null)"><u>U</u></button>
+                    <button type="button" class="format-btn" onclick="document.execCommand('foreColor',false,'#d8232a')"><b style="color:#d8232a">Rød</b></button>
+                    <button type="button" class="format-btn" onclick="document.execCommand('foreColor',false,'#007a7c')"><b style="color:#007a7c">Grøn</b></button>
+                    <button type="button" class="format-btn" onclick="document.execCommand('foreColor',false,'#000000')"><b style="color:#000000">Sort</b></button>
+                </div>
+                <div class="wysiwyg-editor" contenteditable="true" onblur="currentBlocks[${index}].value = this.innerHTML">${block.value}</div>
+            `;
+        } else if (block.type === 'file') {
+            body = `
+                <input type="file" onchange="currentBlocks[${index}].file = this.files[0]">
+                ${typeof block.value === 'string' && block.value.length > 0 ? `<div style="margin-top: 5px; font-size: 14px; color: #666;">Nuværende fil: ${block.value} (Upload en ny for at overskrive)</div>` : ''}
+            `;
+        } else if (block.type === 'video') {
+            body = `
+                <input type="text" placeholder="Indsæt YouTube URL..." value="${block.value}" onchange="currentBlocks[${index}].value = this.value">
+            `;
+        } else if (block.type === 'quiz') {
+            let optsHtml = '';
+            block.value.options.forEach((opt, optIndex) => {
+                optsHtml += `
+                    <div class="quiz-option">
+                        <input type="radio" name="quiz_correct_${index}" ${optIndex === block.value.correctIndex ? 'checked' : ''} onchange="currentBlocks[${index}].value.correctIndex = ${optIndex}">
+                        <input type="text" value="${opt}" onchange="currentBlocks[${index}].value.options[${optIndex}] = this.value" placeholder="Svarmulighed">
+                    </div>
+                `;
+            });
+            
+            body = `
+                <label>Spørgsmål</label>
+                <div class="wysiwyg-editor" style="min-height: 40px; margin-bottom: 10px;" contenteditable="true" onblur="currentBlocks[${index}].value.question = this.innerHTML">${block.value.question}</div>
+                <label>Svarmuligheder (vælg det rigtige svar)</label>
+                ${optsHtml}
+                <label style="margin-top: 10px;">Godt klaret-besked (vises når de svarer rigtigt)</label>
+                <div class="wysiwyg-editor" style="min-height: 40px;" contenteditable="true" onblur="currentBlocks[${index}].value.explanation = this.innerHTML">${block.value.explanation}</div>
+            `;
+        }
+        
+        div.innerHTML = header + body;
+        container.appendChild(div);
+    });
+}
+
+async function saveDoor() {
+    // Focus ud af evt. redigeringsfelter for at sikre at onblur fyrer
+    if (document.activeElement && document.activeElement !== document.body) {
+        document.activeElement.blur();
+    }
+    
+    const day = document.getElementById('door-day').value;
+    const title = document.getElementById('door-title').value || (day + '. december');
+    const emoji = document.getElementById('door-emoji').value || '🎁';
+    const statusEl = document.getElementById('status');
+    statusEl.style.display = 'none';
+    
+    const formData = new FormData();
+    let bodyArray = [];
+    
+    currentBlocks.forEach((block, index) => {
+        if (block.type === 'text') {
+            bodyArray.push({ type: 'html', value: block.value });
+        } else if (block.type === 'video') {
+            let embedUrl = block.value;
+            if (embedUrl.includes('watch?v=')) {
+                embedUrl = 'https://www.youtube.com/embed/' + embedUrl.split('watch?v=')[1].split('&')[0];
+            } else if (embedUrl.includes('youtu.be/')) {
+                embedUrl = 'https://www.youtube.com/embed/' + embedUrl.split('youtu.be/')[1].split('?')[0];
+            }
+            bodyArray.push({ type: 'video', value: embedUrl });
+        } else if (block.type === 'file') {
+            if (block.file) {
+                const safeName = "blok" + index + "_" + block.file.name;
+                const isVideo = block.file.type.startsWith('video');
+                bodyArray.push({ type: isVideo ? 'video' : 'image', value: "/låger/" + day + "/" + safeName });
+                formData.append('file', block.file, safeName);
+            } else if (typeof block.value === 'string' && block.value.length > 0) {
+                // Keep the old file
+                const isVideo = block.value.endsWith('.mp4') || block.value.endsWith('.webm');
+                bodyArray.push({ type: isVideo ? 'video' : 'image', value: block.value });
+            }
+        } else if (block.type === 'quiz') {
+            bodyArray.push({ type: 'quiz', value: block.value });
+        }
+    });
+    
+    const dataObj = { title: title, emoji: emoji, body: bodyArray };
+    formData.append("data", JSON.stringify(dataObj));
+    
+    try {
+        const response = await fetch('/api/door/' + day, { method: 'POST', body: formData });
+        if (response.ok) {
+            statusEl.textContent = '✅ Låge ' + day + ' er gemt!';
+            statusEl.className = 'status success';
+            statusEl.style.display = 'block';
+        } else throw new Error("Fejl fra server");
+    } catch (e) {
+        statusEl.textContent = '❌ Der skete en fejl. Har du startet Julekalender.exe?';
+        statusEl.className = 'status error';
+        statusEl.style.display = 'block';
+    }
+}
+
+    // Hold the C# server alive by pinging it every 2 seconds
+    setInterval(function() {
+        fetch('/api/heartbeat').catch(function(){});
+    }, 2000);
+</script>
+</body>
+</html>
+

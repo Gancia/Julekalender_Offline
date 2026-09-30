@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Min Julekalender</title>
+    <link rel="icon" href="assets/tree.png">
+    <!-- Google Fonts: Patrick Hand for chalk-style headers, Inter for body text -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&family=Patrick+Hand&display=swap" rel="stylesheet">
+    <!-- Indlæser Lucide-ikoner for visuelle elementer -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Link til ekstern CSS-fil -->
+    <link rel="stylesheet" href="css/style.css">
+
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Åbn en låge hver dag i december og se hvad der gemmer sig i denne hyggelige julekalender.">
+    <meta name="keywords" content="julekalender, december, jul, hygge">
+
+    <!-- Open Graph / Facebook / LinkedIn Meta Tags -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="">
+    <meta property="og:title" content="Min Julekalender - Åbn en Låge!">
+    <meta property="og:description" content="Åbn en låge hver dag i december og se hvad der gemmer sig i denne hyggelige julekalender.">
+    <meta property="og:image" content="">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="">
+    <meta name="twitter:title" content="Min Julekalender - Åbn en Låge!">
+    <meta name="twitter:description" content="Åbn en låge hver dag i december og se hvad der gemmer sig i denne hyggelige julekalender.">
+    <meta name="twitter:image" content="">
+
+</head>
+<body>
+    <div id="loading-overlay">
+        <i data-lucide="snowflake" class="snowflake-loader"></i>
+        <p>Indlæser...</p>
+    </div>
+    <!-- Hovedcontainer: Ser nu ud som en indrammet julekalender -->
+    <div class="calendar-main-container content-hidden">
+        <div id="snow-container"></div>
+
+        <!-- Header -->
+        <header style="position: relative;">
+            <img id="header-logo" src="" alt="Kalender-logo" class="header-logo">
+            <a href="editor.html" title="Byg en Låge" style="position: absolute; top: 10px; right: 10px; color: white; opacity: 0.6; transition: opacity 0.2s;">
+                <i data-lucide="pen-tool"></i>
+            </a>
+            <h1>
+                             <span id="main-title"></span>
+            </h1>
+            <p id="subtitle"></p>
+            <div id="date-info">
+                Dagens dato: 
+            </div>
+        </header>
+
+        <!-- Kalendergitter -->
+        <main id="calendar-container" class="calendar-grid">
+            <!-- Lågerne indsættes her af JavaScript -->
+        </main>
+
+        <!-- Modal til at vise indhold -->
+        <div id="modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+            <div class="modal-card">
+                <button class="modal-close-button" aria-label="Luk indholdsvisning">
+                    <i data-lucide="x" class="modal-close-icon"></i>
+                </button>
+                <h2 id="modal-title" class="modal-title"></h2>
+                <div id="modal-loader" class="modal-loader" style="display: none;">
+                    <i data-lucide="snowflake" class="snowflake-loader"></i>
+                    <p>Henter indhold...</p>
+                </div>
+                <div id="modal-content" class="modal-content-container">
+                    <!-- Indhold indsættes her af JavaScript -->
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="snowdrift-container">
+        <div class="snow a"></div>
+        <div class="snow b"></div>
+        <div class="snow c"></div>
+    </div>
+
+
+    <!-- Link til ekstern JavaScript-fil -->
+    <script src="js/script.js"></script>
+    <script>
+        // Hold the C# server alive by pinging it every 2 seconds
+        setInterval(function() {
+            fetch('/api/heartbeat').catch(function(){});
+        }, 2000);
+    </script>
+</body>
+</html>
