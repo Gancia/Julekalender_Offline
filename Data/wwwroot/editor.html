@@ -637,13 +637,36 @@ function renderBlocks() {
                 <div class="wysiwyg-editor" contenteditable="true" onblur="currentBlocks[${index}].value = this.innerHTML">${block.value}</div>
             `;
         } else if (block.type === 'file') {
+            let previewHtml = '';
+            let fileUrl = block.file ? URL.createObjectURL(block.file) : (typeof block.value === 'string' && block.value.length > 0 ? block.value : null);
+            let isVideo = block.file ? block.file.type.startsWith('video') : (fileUrl && (fileUrl.endsWith('.mp4') || fileUrl.endsWith('.webm')));
+            
+            if (fileUrl) {
+                if (isVideo) {
+                    previewHtml = `<video src="${fileUrl}" controls style="max-width: 100%; max-height: 200px; margin-top: 10px; border-radius: 6px;"></video>`;
+                } else {
+                    previewHtml = `<img src="${fileUrl}" style="max-width: 100%; max-height: 200px; margin-top: 10px; border-radius: 6px; object-fit: contain;">`;
+                }
+            }
+
             body = `
-                <input type="file" onchange="currentBlocks[${index}].file = this.files[0]">
-                ${typeof block.value === 'string' && block.value.length > 0 ? `<div style="margin-top: 5px; font-size: 14px; color: #666;">Nuværende fil: ${block.value} (Upload en ny for at overskrive)</div>` : ''}
+                <input type="file" accept="image/*,video/mp4,video/webm" onchange="currentBlocks[${index}].file = this.files[0]; renderBlocks();">
+                ${previewHtml}
             `;
         } else if (block.type === 'video') {
+            let ytPreview = '';
+            if (block.value && (block.value.includes('youtube.com') || block.value.includes('youtu.be'))) {
+                let embedUrl = block.value;
+                if (embedUrl.includes('watch?v=')) {
+                    embedUrl = 'https://www.youtube.com/embed/' + embedUrl.split('watch?v=')[1].split('&')[0];
+                } else if (embedUrl.includes('youtu.be/')) {
+                    embedUrl = 'https://www.youtube.com/embed/' + embedUrl.split('youtu.be/')[1].split('?')[0];
+                }
+                ytPreview = `<iframe src="${embedUrl}" style="width: 100%; height: 200px; margin-top: 10px; border-radius: 6px;" frameborder="0" allowfullscreen></iframe>`;
+            }
             body = `
-                <input type="text" placeholder="Indsæt YouTube URL..." value="${block.value}" onchange="currentBlocks[${index}].value = this.value">
+                <input type="text" placeholder="Indsæt YouTube URL..." value="${block.value}" onchange="currentBlocks[${index}].value = this.value; renderBlocks();">
+                ${ytPreview}
             `;
         } else if (block.type === 'quiz') {
             let optsHtml = '';
