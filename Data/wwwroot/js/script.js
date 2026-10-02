@@ -1,7 +1,7 @@
 // Global variabel til at holde kalenderens indhold
 let calendarData = {
     config: {
-        mainTitle: "Elev Julekalender",
+        mainTitle: "Julekalender",
         subtitle: "Vores helt egen julekalender",
         logoUrl: "assets/logo.png",
         logoAltText: "Logo",
@@ -47,18 +47,18 @@ async function initializeApp() {
     }
 
     // Fetch data for all doors from the local server
+    const fetchPromises = [];
     for(let i=1; i<=24; i++) {
-        try {
-            const res = await fetch('/api/door/' + i);
-            if(res.ok) {
-                calendarData[i] = await res.json();
-            } else {
-                calendarData[i] = { title: i + ". december", emoji: "🎁", body: [] };
-            }
-        } catch(e) {
-            calendarData[i] = { title: i + ". december", emoji: "🎁", body: [] };
-        }
+        fetchPromises.push(
+            fetch('/api/door/' + i)
+                .then(res => res.ok ? res.json() : null)
+                .catch(e => null)
+                .then(data => {
+                    calendarData[i] = data || { title: i + ". december", emoji: "🎁", body: [] };
+                })
+        );
     }
+    await Promise.all(fetchPromises);
 
     // Ensure config exists to prevent errors
     if (!calendarData.config) {
@@ -69,9 +69,9 @@ async function initializeApp() {
     const headerLogo = document.getElementById('header-logo');
     headerLogo.src = calendarData.config.logoUrl || 'assets/logo.png';
     headerLogo.alt = calendarData.config.logoAltText || 'Kalender-logo';
-    document.getElementById('main-title').textContent = calendarData.config.mainTitle || 'Min Julekalender';
+    document.getElementById('main-title').textContent = calendarData.config.mainTitle || 'Julekalender';
     document.getElementById('subtitle').textContent = calendarData.config.subtitle || 'En hyggelig julekalender';
-    document.title = calendarData.config.mainTitle || 'Min Julekalender';
+    document.title = calendarData.config.mainTitle || 'Julekalender';
 
     updateDateInfo();
     createCalendar();
@@ -357,6 +357,12 @@ function handleQuizAnswer(buttonElement, isCorrect) {
  */
 function closeModal() {
     modal.classList.remove('is-visible');
+    // Stop videoer fra at spille i baggrunden ved at fjerne indholdet når fade-out er færdig
+    setTimeout(() => {
+        if (!modal.classList.contains('is-visible')) {
+            modalContent.innerHTML = '';
+        }
+    }, 300);
 }
 
 /**

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Jule-Værkstedet</title>
     <link rel="icon" href="assets/tree.png">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/fonts.css">
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -190,6 +190,11 @@
             background: white;
             margin-top: 5px;
         }
+        .wysiwyg-editor:empty:before {
+            content: attr(data-placeholder);
+            color: #aaa;
+            font-style: italic;
+        }
         .formatting-toolbar {
             display: flex;
             gap: 5px;
@@ -269,7 +274,7 @@
     <div id="tab-config" class="tab-content">
         <div class="form-group">
             <label>Julekalenderens Titel</label>
-            <input type="text" id="config-maintitle" placeholder="F.eks. Min Julekalender">
+            <input type="text" id="config-maintitle" placeholder="F.eks. Julekalender">
         </div>
         <div class="form-group">
             <label>Undertitel</label>
@@ -449,6 +454,7 @@
                 status.className = 'status success';
                 status.textContent = 'Indstillinger blev gemt! Opdater julekalenderen for at se ændringerne.';
                 setTimeout(() => { status.style.display = 'none'; }, 5000);
+                hasPendingConfigSave = false;
             } else {
                 status.className = 'status error';
                 status.textContent = 'Fejl: Kunne ikke gemme indstillinger.';
@@ -457,7 +463,8 @@
             const status = document.getElementById('status');
             status.style.display = 'block';
             status.className = 'status error';
-            status.textContent = 'Forbindelsesfejl til serveren.';
+            status.textContent = '⏳ Serveren er offline. Venter på at du genstarter Julekalender.exe...';
+            hasPendingConfigSave = true;
         }
     }
 
@@ -537,7 +544,7 @@ window.addEventListener('DOMContentLoaded', () => {
 function addBlock(type) {
     let newBlock = { type: type, value: '' };
     if (type === 'quiz') {
-        newBlock.value = { question: 'Hvad er...', options: ['Svar 1', 'Svar 2'], correctIndex: 0, explanation: 'Godt klaret!' };
+        newBlock.value = { question: '', options: ['', ''], correctIndex: 0, explanation: '' };
     }
     currentBlocks.push(newBlock);
     renderBlocks();
@@ -634,7 +641,7 @@ function renderBlocks() {
                     <button type="button" class="format-btn" onclick="document.execCommand('foreColor',false,'#007a7c')"><b style="color:#007a7c">Grøn</b></button>
                     <button type="button" class="format-btn" onclick="document.execCommand('foreColor',false,'#000000')"><b style="color:#000000">Sort</b></button>
                 </div>
-                <div class="wysiwyg-editor" contenteditable="true" onblur="currentBlocks[${index}].value = this.innerHTML">${block.value}</div>
+                <div class="wysiwyg-editor" contenteditable="true" data-placeholder="Skriv din tekst her..." onblur="currentBlocks[${index}].value = this.innerHTML">${block.value}</div>
             `;
         } else if (block.type === 'file') {
             let previewHtml = '';
@@ -661,6 +668,8 @@ function renderBlocks() {
                     embedUrl = 'https://www.youtube.com/embed/' + embedUrl.split('watch?v=')[1].split('&')[0];
                 } else if (embedUrl.includes('youtu.be/')) {
                     embedUrl = 'https://www.youtube.com/embed/' + embedUrl.split('youtu.be/')[1].split('?')[0];
+                } else if (embedUrl.includes('youtube.com/shorts/')) {
+                    embedUrl = 'https://www.youtube.com/embed/' + embedUrl.split('youtube.com/shorts/')[1].split('?')[0];
                 }
                 ytPreview = `<iframe src="${embedUrl}" style="width: 100%; height: 200px; margin-top: 10px; border-radius: 6px;" frameborder="0" allowfullscreen></iframe>`;
             }
@@ -682,12 +691,12 @@ function renderBlocks() {
             
             body = `
                 <label>Spørgsmål</label>
-                <div class="wysiwyg-editor" style="min-height: 40px; margin-bottom: 10px;" contenteditable="true" onblur="currentBlocks[${index}].value.question = this.innerHTML">${block.value.question}</div>
+                <div class="wysiwyg-editor" style="min-height: 40px; margin-bottom: 10px;" contenteditable="true" data-placeholder="Skriv dit spørgsmål her..." onblur="currentBlocks[${index}].value.question = this.innerHTML">${block.value.question}</div>
                 <label>Svarmuligheder (vælg det rigtige svar med knappen til venstre)</label>
                 ${optsHtml}
                 ${block.value.options.length < 4 ? `<button type="button" class="format-btn" style="margin-bottom:10px; color:#007a7c; font-weight:bold;" onclick="addQuizOption(${index})">+ Tilføj svarmulighed</button>` : ''}
                 <label style="margin-top: 10px;">Godt klaret-besked (vises når de svarer rigtigt)</label>
-                <div class="wysiwyg-editor" style="min-height: 40px;" contenteditable="true" onblur="currentBlocks[${index}].value.explanation = this.innerHTML">${block.value.explanation}</div>
+                <div class="wysiwyg-editor" style="min-height: 40px;" contenteditable="true" data-placeholder="F.eks. Godt klaret! Nissen gemte sig i træet." onblur="currentBlocks[${index}].value.explanation = this.innerHTML">${block.value.explanation}</div>
             `;
         }
         
@@ -720,6 +729,8 @@ async function saveDoor() {
                 embedUrl = 'https://www.youtube.com/embed/' + embedUrl.split('watch?v=')[1].split('&')[0];
             } else if (embedUrl.includes('youtu.be/')) {
                 embedUrl = 'https://www.youtube.com/embed/' + embedUrl.split('youtu.be/')[1].split('?')[0];
+            } else if (embedUrl.includes('youtube.com/shorts/')) {
+                embedUrl = 'https://www.youtube.com/embed/' + embedUrl.split('youtube.com/shorts/')[1].split('?')[0];
             }
             bodyArray.push({ type: 'video', value: embedUrl });
         } else if (block.type === 'file') {
@@ -747,19 +758,72 @@ async function saveDoor() {
             statusEl.textContent = '✅ Låge ' + day + ' er gemt!';
             statusEl.className = 'status success';
             statusEl.style.display = 'block';
+            hasPendingSave = false;
         } else throw new Error("Fejl fra server");
     } catch (e) {
-        statusEl.textContent = '❌ Der skete en fejl. Har du startet Julekalender.exe?';
+        statusEl.textContent = '⏳ Serveren er offline. Venter på at du genstarter Julekalender.exe... Din låge gemmes automatisk når serveren er tilbage!';
         statusEl.className = 'status error';
         statusEl.style.display = 'block';
+        hasPendingSave = true;
     }
 }
 
+    let isServerOnline = true;
+    let hasPendingSave = false;
+    let hasPendingConfigSave = false;
+
     // Hold the C# server alive by pinging it every 2 seconds
-    setInterval(function() {
-        fetch('/api/heartbeat').catch(function(){});
+    setInterval(async function() {
+        try {
+            const res = await fetch('/api/heartbeat');
+            if (res.ok) {
+                if (!isServerOnline) {
+                    isServerOnline = true;
+                    const modal = document.getElementById('offline-modal');
+                    if (modal) modal.style.display = 'none';
+                    if (hasPendingSave) {
+                        const statusEl = document.getElementById('status');
+                        statusEl.textContent = '🔄 Serveren er tilbage! Gemmer lågen automatisk...';
+                        statusEl.className = 'status';
+                        statusEl.style.display = 'block';
+                        saveDoor();
+                    } else if (hasPendingConfigSave) {
+                        const statusEl = document.getElementById('status');
+                        statusEl.textContent = '🔄 Serveren er tilbage! Gemmer indstillinger automatisk...';
+                        statusEl.className = 'status';
+                        statusEl.style.display = 'block';
+                        saveConfig();
+                    }
+                }
+            } else {
+                throw new Error("offline");
+            }
+        } catch (e) {
+            if (isServerOnline) {
+                isServerOnline = false;
+                const modal = document.getElementById('offline-modal');
+                if (modal) modal.style.display = 'flex';
+            }
+        }
     }, 2000);
 </script>
+
+<div id="offline-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); z-index: 9999; justify-content: center; align-items: center; text-align: center; color: white; padding: 20px; box-sizing: border-box;">
+    <div style="background: #dc3545; padding: 40px; border-radius: 10px; max-width: 600px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+        <h2 style="margin-top: 0; color: white;">⚠️ Serveren er lukket! ⚠️</h2>
+        <p style="font-size: 18px; line-height: 1.5;">Forbindelsen til <b>Julekalender.exe</b> er afbrudt.</p>
+        <p style="font-size: 18px; line-height: 1.5;"><b>LUK IKKE DETTE VINDUE</b> (så mister du ikke dit arbejde).</p>
+        <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; margin: 20px 0; text-align: left;">
+            <p style="margin-top: 0; font-weight: bold;">Gør følgende for at fortsætte:</p>
+            <ol style="margin-bottom: 0; line-height: 1.6;">
+                <li>Start <b>Julekalender.exe</b> programmet på din computer igen.</li>
+                <li>Programmet åbner måske et nyt vindue - det vindue kan du bare lukke.</li>
+                <li>Gå tilbage hertil. Denne besked forsvinder automatisk når forbindelsen er genoprettet, og dit arbejde bliver gemt!</li>
+            </ol>
+        </div>
+        <div style="margin-top: 20px; display: inline-block; width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+        <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
+    </div>
+</div>
 </body>
 </html>
-

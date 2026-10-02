@@ -6,8 +6,7 @@ html {
   box-sizing: inherit;
 }
 
-/* IMPORTEREDE FONTE: 'Patrick Hand' til kridt-stil, 'Inter' til brødtekst */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&family=Patrick+Hand&display=swap');
+/* IMPORTEREDE FONTE ligger nu lokalt i fonts.css */
 
 /* TEMA: BYSKOVSKOLEN JULEKALENDER (Mobile-First) */
 body {
