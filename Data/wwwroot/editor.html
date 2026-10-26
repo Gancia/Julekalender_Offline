@@ -489,23 +489,48 @@
         }
     }
 
-    function setEmoji(emoji) {
+    function setEmoji(emoji, skipDraft) {
         document.getElementById('door-emoji').value = emoji;
         document.getElementById('selected-emoji-preview').textContent = emoji;
         document.getElementById('full-emoji-picker').classList.add('content-hidden');
+        if (!skipDraft) saveDraft();
     }
 
     // Blocks array
 let currentBlocks = [];
+let isLoadingDoor = false;
+
+function saveDraft() {
+    if (isLoadingDoor) return;
+    try {
+        const day = document.getElementById('door-day').value;
+        const draft = {
+            title: document.getElementById('door-title').value,
+            emoji: document.getElementById('door-emoji').value || '🎁',
+            blocks: currentBlocks.map(b => ({
+                type: b.type,
+                value: b.value
+            }))
+        };
+        localStorage.setItem('julekalender_draft_' + day, JSON.stringify(draft));
+    } catch (e) {}
+}
+
+function clearDraft(day) {
+    try {
+        localStorage.removeItem('julekalender_draft_' + day);
+    } catch (e) {}
+}
 
 function clearDoorForm() {
     document.getElementById('door-title').value = '';
-    setEmoji('🎁');
+    setEmoji('🎁', true);
     currentBlocks = [];
     renderBlocks();
 }
 
 async function loadDoor(day) {
+    isLoadingDoor = true;
     clearDoorForm();
     try {
         const res = await fetch('/api/door/' + day);
@@ -515,7 +540,7 @@ async function loadDoor(day) {
                 document.getElementById('door-title').value = data.title;
             }
             if(data.emoji) {
-                setEmoji(data.emoji);
+                setEmoji(data.emoji, true);
             }
             if(data.body && data.body.length > 0) {
                 // Map the server blocks to our editable blocks
@@ -529,15 +554,36 @@ async function loadDoor(day) {
                     return block;
                 });
             }
-            renderBlocks();
         }
     } catch(e) {
         console.error("Kunne ikke hente låge", e);
     }
+
+    // Gendan evt. ikke-gemt kladde fra localStorage, hvis eleven lukkede vinduet før der blev trykket Gem
+    try {
+        const savedDraft = localStorage.getItem('julekalender_draft_' + day);
+        if (savedDraft) {
+            const draft = JSON.parse(savedDraft);
+            if (draft) {
+                document.getElementById('door-title').value = draft.title || '';
+                if (draft.emoji) setEmoji(draft.emoji, true);
+                if (Array.isArray(draft.blocks)) {
+                    currentBlocks = draft.blocks.map(b => b.type === 'file' ? { type: 'file', value: b.value, file: null } : b);
+                }
+            }
+        }
+    } catch (e) {}
+
+    renderBlocks();
+    isLoadingDoor = false;
 }
 
 // Automatically load day 1 on boot
 window.addEventListener('DOMContentLoaded', () => {
+    const titleInput = document.getElementById('door-title');
+    if (titleInput) {
+        titleInput.addEventListener('input', saveDraft);
+    }
     loadDoor(1);
 });
 
@@ -548,12 +594,14 @@ function addBlock(type) {
     }
     currentBlocks.push(newBlock);
     renderBlocks();
+    saveDraft();
 }
 
 function removeBlock(index) {
     if(confirm('Er du sikker på du vil fjerne denne byggeklods?')) {
         currentBlocks.splice(index, 1);
         renderBlocks();
+        saveDraft();
     }
 }
 
@@ -563,24 +611,29 @@ function moveBlock(index, dir) {
     currentBlocks[index] = currentBlocks[index + dir];
     currentBlocks[index + dir] = temp;
     renderBlocks();
+    saveDraft();
 }
 
 function updateBlockValue(index, newValue) {
     currentBlocks[index].value = newValue;
+    saveDraft();
 }
 
 function updateQuizValue(index, field, value) {
     currentBlocks[index].value[field] = value;
+    saveDraft();
 }
 
 function updateQuizOption(blockIndex, optIndex, value) {
     currentBlocks[blockIndex].value.options[optIndex] = value;
+    saveDraft();
 }
 
 function addQuizOption(blockIndex) {
     if (currentBlocks[blockIndex].value.options.length < 4) {
-        currentBlocks[blockIndex].value.options.push('Nyt svar');
+        currentBlocks[blockIndex].value.options.push('');
         renderBlocks();
+        saveDraft();
     } else {
         alert("Du kan maksimalt have 4 svarmuligheder.");
     }
@@ -595,6 +648,7 @@ function removeQuizOption(blockIndex, optIndex) {
             currentBlocks[blockIndex].value.correctIndex--;
         }
         renderBlocks();
+        saveDraft();
     } else {
         alert("Du skal minimum have 2 svarmuligheder.");
     }
@@ -641,7 +695,7 @@ function renderBlocks() {
                     <button type="button" class="format-btn" onclick="document.execCommand('foreColor',false,'#007a7c')"><b style="color:#007a7c">Grøn</b></button>
                     <button type="button" class="format-btn" onclick="document.execCommand('foreColor',false,'#000000')"><b style="color:#000000">Sort</b></button>
                 </div>
-                <div class="wysiwyg-editor" contenteditable="true" data-placeholder="Skriv din tekst her..." onblur="currentBlocks[${index}].value = this.innerHTML">${block.value}</div>
+                <div class="wysiwyg-editor" contenteditable="true" data-placeholder="Skriv din tekst her..." oninput="currentBlocks[${index}].value = this.innerHTML; saveDraft();" onblur="currentBlocks[${index}].value = this.innerHTML; saveDraft();">${block.value}</div>
             `;
         } else if (block.type === 'file') {
             let previewHtml = '';
@@ -657,7 +711,7 @@ function renderBlocks() {
             }
 
             body = `
-                <input type="file" accept="image/*,video/mp4,video/webm" onchange="currentBlocks[${index}].file = this.files[0]; renderBlocks();">
+                <input type="file" accept="image/*,video/mp4,video/webm" onchange="currentBlocks[${index}].file = this.files[0]; renderBlocks(); saveDraft();">
                 ${previewHtml}
             `;
         } else if (block.type === 'video') {
@@ -674,7 +728,7 @@ function renderBlocks() {
                 ytPreview = `<iframe src="${embedUrl}" style="width: 100%; height: 200px; margin-top: 10px; border-radius: 6px;" frameborder="0" allowfullscreen></iframe>`;
             }
             body = `
-                <input type="text" placeholder="Indsæt YouTube URL..." value="${block.value}" onchange="currentBlocks[${index}].value = this.value; renderBlocks();">
+                <input type="text" placeholder="Indsæt YouTube URL..." value="${block.value}" oninput="currentBlocks[${index}].value = this.value; saveDraft();" onchange="currentBlocks[${index}].value = this.value; renderBlocks(); saveDraft();">
                 ${ytPreview}
             `;
         } else if (block.type === 'quiz') {
@@ -682,8 +736,8 @@ function renderBlocks() {
             block.value.options.forEach((opt, optIndex) => {
                 optsHtml += `
                     <div class="quiz-option">
-                        <input type="radio" name="quiz_correct_${index}" ${optIndex === block.value.correctIndex ? 'checked' : ''} onchange="currentBlocks[${index}].value.correctIndex = ${optIndex}">
-                        <input type="text" value="${opt}" onchange="updateQuizOption(${index}, ${optIndex}, this.value)" placeholder="Svarmulighed">
+                        <input type="radio" name="quiz_correct_${index}" ${optIndex === block.value.correctIndex ? 'checked' : ''} onchange="currentBlocks[${index}].value.correctIndex = ${optIndex}; saveDraft();">
+                        <input type="text" value="${opt}" oninput="updateQuizOption(${index}, ${optIndex}, this.value)" onchange="updateQuizOption(${index}, ${optIndex}, this.value)" placeholder="Svarmulighed">
                         <button type="button" class="btn-remove" style="background:#dc3545;" onclick="removeQuizOption(${index}, ${optIndex})" title="Slet mulighed">✖</button>
                     </div>
                 `;
@@ -691,12 +745,12 @@ function renderBlocks() {
             
             body = `
                 <label>Spørgsmål</label>
-                <div class="wysiwyg-editor" style="min-height: 40px; margin-bottom: 10px;" contenteditable="true" data-placeholder="Skriv dit spørgsmål her..." onblur="currentBlocks[${index}].value.question = this.innerHTML">${block.value.question}</div>
+                <div class="wysiwyg-editor" style="min-height: 40px; margin-bottom: 10px;" contenteditable="true" data-placeholder="Skriv dit spørgsmål her..." oninput="currentBlocks[${index}].value.question = this.innerHTML; saveDraft();" onblur="currentBlocks[${index}].value.question = this.innerHTML; saveDraft();">${block.value.question}</div>
                 <label>Svarmuligheder (vælg det rigtige svar med knappen til venstre)</label>
                 ${optsHtml}
                 ${block.value.options.length < 4 ? `<button type="button" class="format-btn" style="margin-bottom:10px; color:#007a7c; font-weight:bold;" onclick="addQuizOption(${index})">+ Tilføj svarmulighed</button>` : ''}
                 <label style="margin-top: 10px;">Godt klaret-besked (vises når de svarer rigtigt)</label>
-                <div class="wysiwyg-editor" style="min-height: 40px;" contenteditable="true" data-placeholder="F.eks. Godt klaret! Nissen gemte sig i træet." onblur="currentBlocks[${index}].value.explanation = this.innerHTML">${block.value.explanation}</div>
+                <div class="wysiwyg-editor" style="min-height: 40px;" contenteditable="true" data-placeholder="F.eks. Godt klaret! Nissen gemte sig i træet." oninput="currentBlocks[${index}].value.explanation = this.innerHTML; saveDraft();" onblur="currentBlocks[${index}].value.explanation = this.innerHTML; saveDraft();">${block.value.explanation}</div>
             `;
         }
         
@@ -755,6 +809,7 @@ async function saveDoor() {
     try {
         const response = await fetch('/api/door/' + day, { method: 'POST', body: formData });
         if (response.ok) {
+            clearDraft(day);
             statusEl.textContent = '✅ Låge ' + day + ' er gemt!';
             statusEl.className = 'status success';
             statusEl.style.display = 'block';
@@ -772,40 +827,65 @@ async function saveDoor() {
     let hasPendingSave = false;
     let hasPendingConfigSave = false;
 
-    // Hold the C# server alive by pinging it every 2 seconds
-    setInterval(async function() {
-        try {
-            const res = await fetch('/api/heartbeat');
-            if (res.ok) {
-                if (!isServerOnline) {
-                    isServerOnline = true;
-                    const modal = document.getElementById('offline-modal');
-                    if (modal) modal.style.display = 'none';
-                    if (hasPendingSave) {
-                        const statusEl = document.getElementById('status');
-                        statusEl.textContent = '🔄 Serveren er tilbage! Gemmer lågen automatisk...';
-                        statusEl.className = 'status';
-                        statusEl.style.display = 'block';
-                        saveDoor();
-                    } else if (hasPendingConfigSave) {
-                        const statusEl = document.getElementById('status');
-                        statusEl.textContent = '🔄 Serveren er tilbage! Gemmer indstillinger automatisk...';
-                        statusEl.className = 'status';
-                        statusEl.style.display = 'block';
-                        saveConfig();
-                    }
+    function handleHeartbeatStatus(online) {
+        if (online) {
+            if (!isServerOnline) {
+                isServerOnline = true;
+                const modal = document.getElementById('offline-modal');
+                if (modal) modal.style.display = 'none';
+                if (hasPendingSave) {
+                    const statusEl = document.getElementById('status');
+                    statusEl.textContent = '🔄 Serveren er tilbage! Gemmer lågen automatisk...';
+                    statusEl.className = 'status';
+                    statusEl.style.display = 'block';
+                    saveDoor();
+                } else if (hasPendingConfigSave) {
+                    const statusEl = document.getElementById('status');
+                    statusEl.textContent = '🔄 Serveren er tilbage! Gemmer indstillinger automatisk...';
+                    statusEl.className = 'status';
+                    statusEl.style.display = 'block';
+                    saveConfig();
                 }
-            } else {
-                throw new Error("offline");
             }
-        } catch (e) {
+        } else {
             if (isServerOnline) {
                 isServerOnline = false;
                 const modal = document.getElementById('offline-modal');
                 if (modal) modal.style.display = 'flex';
             }
         }
-    }, 2000);
+    }
+
+    // Hold the C# server alive using a background Web Worker (immune to tab throttling & dialog pauses)
+    (function() {
+        const origin = window.location.origin;
+        try {
+            const workerCode = `
+                setInterval(async function() {
+                    try {
+                        const res = await fetch('${origin}/api/heartbeat', { cache: 'no-store' });
+                        self.postMessage(res.ok);
+                    } catch (e) {
+                        self.postMessage(false);
+                    }
+                }, 2000);
+            `;
+            const blob = new Blob([workerCode], { type: 'application/javascript' });
+            const worker = new Worker(URL.createObjectURL(blob));
+            worker.onmessage = function(e) {
+                handleHeartbeatStatus(e.data);
+            };
+        } catch (e) {
+            setInterval(async function() {
+                try {
+                    const res = await fetch('/api/heartbeat', { cache: 'no-store' });
+                    handleHeartbeatStatus(res.ok);
+                } catch (err) {
+                    handleHeartbeatStatus(false);
+                }
+            }, 2000);
+        }
+    })();
 </script>
 
 <div id="offline-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); z-index: 9999; justify-content: center; align-items: center; text-align: center; color: white; padding: 20px; box-sizing: border-box;">

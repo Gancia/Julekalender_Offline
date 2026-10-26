@@ -90,10 +90,23 @@
     <!-- Link til ekstern JavaScript-fil -->
     <script src="js/script.js"></script>
     <script>
-        // Hold the C# server alive by pinging it every 2 seconds
-        setInterval(function() {
-            fetch('/api/heartbeat').catch(function(){});
-        }, 2000);
+        // Hold the C# server alive using a background Web Worker (immune to tab throttling & dialog pauses)
+        (function() {
+            const origin = window.location.origin;
+            try {
+                const workerCode = `
+                    setInterval(function() {
+                        fetch('${origin}/api/heartbeat', { cache: 'no-store' }).catch(function(){});
+                    }, 2000);
+                `;
+                const blob = new Blob([workerCode], { type: 'application/javascript' });
+                new Worker(URL.createObjectURL(blob));
+            } catch (e) {
+                setInterval(function() {
+                    fetch('/api/heartbeat', { cache: 'no-store' }).catch(function(){});
+                }, 2000);
+            }
+        })();
     </script>
 </body>
 </html>
