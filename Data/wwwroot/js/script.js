@@ -67,8 +67,27 @@ async function initializeApp() {
     
     // Populate header with dynamic data
     const headerLogo = document.getElementById('header-logo');
-    headerLogo.src = calendarData.config.logoUrl || 'assets/logo.png';
-    headerLogo.alt = calendarData.config.logoAltText || 'Kalender-logo';
+    const headerStudentName = document.getElementById('header-student-name');
+    const headerMode = calendarData.config.headerMode || 'logo';
+
+    if (headerMode === 'name') {
+        headerLogo.style.display = 'none';
+        if (headerStudentName && calendarData.config.studentName) {
+            headerStudentName.textContent = calendarData.config.studentName;
+            headerStudentName.style.display = 'inline-block';
+        } else if (headerStudentName) {
+            headerStudentName.style.display = 'none';
+        }
+    } else if (headerMode === 'none') {
+        headerLogo.style.display = 'none';
+        if (headerStudentName) headerStudentName.style.display = 'none';
+    } else {
+        headerLogo.src = calendarData.config.logoUrl || 'assets/logo.png';
+        headerLogo.alt = calendarData.config.logoAltText || 'Kalender-logo';
+        headerLogo.style.display = 'inline-block';
+        if (headerStudentName) headerStudentName.style.display = 'none';
+    }
+
     document.getElementById('main-title').textContent = calendarData.config.mainTitle || 'Julekalender';
     document.getElementById('subtitle').textContent = calendarData.config.subtitle || 'En hyggelig julekalender';
     document.title = calendarData.config.mainTitle || 'Julekalender';
@@ -231,8 +250,8 @@ function openDoor(day) {
                     contentHtml += `<div class="image-block"><img src="${block.value}" alt="${block.alt || ''}"></div>`;
                     break;
                 case 'video':
-                    if (block.value.toLowerCase().endsWith('.mp4') || block.value.startsWith('/låger/')) {
-                        contentHtml += `<div class="video-container"><video src="${block.value}" controls style="width: 100%; max-height: 400px; border-radius: 8px;"></video></div>`;
+                    if (block.value.toLowerCase().endsWith('.mp4') || block.value.toLowerCase().endsWith('.webm') || block.value.startsWith('/låger/')) {
+                        contentHtml += `<div class="image-block"><video src="${block.value}" controls style="width: 100%; max-height: 400px; border-radius: 8px; display: block; margin: 0 auto;"></video></div>`;
                     } else {
                         contentHtml += `<div class="video-container"><iframe src="${block.value}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"></iframe></div>`;
                     }

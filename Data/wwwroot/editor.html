@@ -94,6 +94,7 @@
         }
         button.save-btn {
             width: 100%;
+            margin-top: 20px;
             padding: 15px;
             background-color: #007a7c;
             color: white;
@@ -280,6 +281,30 @@
             <label>Undertitel</label>
             <input type="text" id="config-subtitle" placeholder="F.eks. Lavet af 2.A">
         </div>
+        <div class="form-group" style="background: #f9f9f9; border: 1px solid #ddd; padding: 15px; border-radius: 8px;">
+            <label>Top-visning (Skolens logo eller Elevens navn)</label>
+            <div style="font-size: 14px; color: #555; margin-bottom: 10px;">Vælg om der skal vises skolens logo eller dit eget navn øverst på kalenderen:</div>
+            <select id="config-headermode" onchange="toggleHeaderMode()" style="margin-bottom: 12px;">
+                <option value="logo">🏫 Vis skolens logo</option>
+                <option value="name">👤 Vis elevens / klassens navn</option>
+                <option value="none">🚫 Skjul (vis hverken logo eller navn)</option>
+            </select>
+
+            <div id="config-logo-section">
+                <label style="font-size: 14px; margin-bottom: 6px;">Nuværende skolelogo:</label>
+                <div style="background: #005a5b; padding: 12px; border-radius: 6px; text-align: center; margin-bottom: 10px;">
+                    <img id="config-logo-preview" src="assets/logo.png" alt="Logo forhåndsvisning" style="max-height: 55px; max-width: 100%; object-fit: contain;">
+                </div>
+                <label style="font-size: 14px; margin-bottom: 4px;">Skift skolens logo (vælg billede fra computeren):</label>
+                <input type="file" id="config-logo-file" accept="image/*" onchange="handleLogoUpload(this)">
+                <button type="button" onclick="resetSchoolLogo()" style="margin-top: 8px; background: #fff; border: 1px solid #ccc; color: #333; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 13px;">Nulstil til standard-logo</button>
+            </div>
+
+            <div id="config-name-section" style="display: none;">
+                <label style="font-size: 14px; margin-bottom: 6px;">Elevens eller klassens navn:</label>
+                <input type="text" id="config-studentname" placeholder="F.eks. Lavet af Emilie">
+            </div>
+        </div>
         <div class="form-group">
             <label>Test-tilstand (Tillad at åbne låger før tid)</label>
             <select id="config-testmode">
@@ -382,6 +407,58 @@
     }
 
     let currentDoorOrder = null;
+    let currentLogoUrl = 'assets/logo.png';
+
+    function toggleHeaderMode() {
+        const mode = document.getElementById('config-headermode').value;
+        document.getElementById('config-logo-section').style.display = (mode === 'logo') ? 'block' : 'none';
+        document.getElementById('config-name-section').style.display = (mode === 'name') ? 'block' : 'none';
+    }
+
+    function handleLogoUpload(input) {
+        const file = input.files && input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const dataUrl = e.target.result;
+            if (file.type === 'image/svg+xml' || file.type === 'image/gif') {
+                currentLogoUrl = dataUrl;
+                document.getElementById('config-logo-preview').src = currentLogoUrl;
+                return;
+            }
+            const img = new Image();
+            img.onload = function() {
+                const maxH = 160;
+                const maxW = 600;
+                let w = img.width;
+                let h = img.height;
+                if (h > maxH) {
+                    w = Math.round(w * (maxH / h));
+                    h = maxH;
+                }
+                if (w > maxW) {
+                    h = Math.round(h * (maxW / w));
+                    w = maxW;
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width = w;
+                canvas.height = h;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, w, h);
+                currentLogoUrl = canvas.toDataURL('image/png');
+                document.getElementById('config-logo-preview').src = currentLogoUrl;
+            };
+            img.src = dataUrl;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function resetSchoolLogo() {
+        currentLogoUrl = 'assets/logo.png';
+        document.getElementById('config-logo-preview').src = currentLogoUrl;
+        const fileInput = document.getElementById('config-logo-file');
+        if (fileInput) fileInput.value = '';
+    }
 
     async function loadConfig() {
         try {
@@ -390,6 +467,13 @@
                 const config = await res.json();
                 if (config.mainTitle) document.getElementById('config-maintitle').value = config.mainTitle;
                 if (config.subtitle) document.getElementById('config-subtitle').value = config.subtitle;
+                if (config.headerMode) document.getElementById('config-headermode').value = config.headerMode;
+                if (config.studentName !== undefined) document.getElementById('config-studentname').value = config.studentName;
+                if (config.logoUrl) {
+                    currentLogoUrl = config.logoUrl;
+                    document.getElementById('config-logo-preview').src = currentLogoUrl;
+                }
+                toggleHeaderMode();
                 if (config.isTestMode !== undefined) document.getElementById('config-testmode').value = config.isTestMode.toString();
                 if (config.showSnowfall !== undefined) document.getElementById('config-snow').value = config.showSnowfall.toString();
                 if (config.showSnowdrift !== undefined) document.getElementById('config-snowdrift').value = config.showSnowdrift.toString();
@@ -426,6 +510,9 @@
         const config = {
             mainTitle: document.getElementById('config-maintitle').value,
             subtitle: document.getElementById('config-subtitle').value,
+            headerMode: document.getElementById('config-headermode').value,
+            studentName: document.getElementById('config-studentname').value,
+            logoUrl: currentLogoUrl,
             isTestMode: document.getElementById('config-testmode').value === 'true',
             showSnowfall: document.getElementById('config-snow').value === 'true',
             showSnowdrift: document.getElementById('config-snowdrift').value === 'true',
@@ -522,6 +609,19 @@ function clearDraft(day) {
     } catch (e) {}
 }
 
+function escapeAttr(str) {
+    return String(str || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+}
+
+function applyFormat(index, command, value) {
+    document.execCommand(command, false, value || null);
+    const editorEl = document.getElementById('text-editor-' + index);
+    if (editorEl && currentBlocks[index]) {
+        currentBlocks[index].value = editorEl.innerHTML;
+        saveDraft();
+    }
+}
+
 function clearDoorForm() {
     document.getElementById('door-title').value = '';
     setEmoji('🎁', true);
@@ -545,11 +645,12 @@ async function loadDoor(day) {
             if(data.body && data.body.length > 0) {
                 // Map the server blocks to our editable blocks
                 currentBlocks = data.body.map(block => {
+                    const isYt = typeof block.value === 'string' && (block.value.includes('youtube.com') || block.value.includes('youtu.be'));
                     if (block.type === 'html' || block.type === 'text') return { type: 'text', value: block.value };
-                    if (block.type === 'image' || block.type === 'video' && !block.value.includes('youtube.com')) {
+                    if (block.type === 'image' || (block.type === 'video' && !isYt)) {
                         return { type: 'file', value: block.value, file: null };
                     }
-                    if (block.type === 'video' && block.value.includes('youtube.com')) return { type: 'video', value: block.value };
+                    if (block.type === 'video' && isYt) return { type: 'video', value: block.value };
                     if (block.type === 'quiz') return { type: 'quiz', value: block.value };
                     return block;
                 });
@@ -558,21 +659,6 @@ async function loadDoor(day) {
     } catch(e) {
         console.error("Kunne ikke hente låge", e);
     }
-
-    // Gendan evt. ikke-gemt kladde fra localStorage, hvis eleven lukkede vinduet før der blev trykket Gem
-    try {
-        const savedDraft = localStorage.getItem('julekalender_draft_' + day);
-        if (savedDraft) {
-            const draft = JSON.parse(savedDraft);
-            if (draft) {
-                document.getElementById('door-title').value = draft.title || '';
-                if (draft.emoji) setEmoji(draft.emoji, true);
-                if (Array.isArray(draft.blocks)) {
-                    currentBlocks = draft.blocks.map(b => b.type === 'file' ? { type: 'file', value: b.value, file: null } : b);
-                }
-            }
-        }
-    } catch (e) {}
 
     renderBlocks();
     isLoadingDoor = false;
@@ -688,14 +774,14 @@ function renderBlocks() {
         if (block.type === 'text') {
             body = `
                 <div class="formatting-toolbar">
-                    <button type="button" class="format-btn" onclick="document.execCommand('bold',false,null)"><b>B</b></button>
-                    <button type="button" class="format-btn" onclick="document.execCommand('italic',false,null)"><i>I</i></button>
-                    <button type="button" class="format-btn" onclick="document.execCommand('underline',false,null)"><u>U</u></button>
-                    <button type="button" class="format-btn" onclick="document.execCommand('foreColor',false,'#d8232a')"><b style="color:#d8232a">Rød</b></button>
-                    <button type="button" class="format-btn" onclick="document.execCommand('foreColor',false,'#007a7c')"><b style="color:#007a7c">Grøn</b></button>
-                    <button type="button" class="format-btn" onclick="document.execCommand('foreColor',false,'#000000')"><b style="color:#000000">Sort</b></button>
+                    <button type="button" class="format-btn" onmousedown="event.preventDefault()" onclick="applyFormat(${index}, 'bold')"><b>B</b></button>
+                    <button type="button" class="format-btn" onmousedown="event.preventDefault()" onclick="applyFormat(${index}, 'italic')"><i>I</i></button>
+                    <button type="button" class="format-btn" onmousedown="event.preventDefault()" onclick="applyFormat(${index}, 'underline')"><u>U</u></button>
+                    <button type="button" class="format-btn" onmousedown="event.preventDefault()" onclick="applyFormat(${index}, 'foreColor', '#d8232a')"><b style="color:#d8232a">Rød</b></button>
+                    <button type="button" class="format-btn" onmousedown="event.preventDefault()" onclick="applyFormat(${index}, 'foreColor', '#007a7c')"><b style="color:#007a7c">Grøn</b></button>
+                    <button type="button" class="format-btn" onmousedown="event.preventDefault()" onclick="applyFormat(${index}, 'foreColor', '#000000')"><b style="color:#000000">Sort</b></button>
                 </div>
-                <div class="wysiwyg-editor" contenteditable="true" data-placeholder="Skriv din tekst her..." oninput="currentBlocks[${index}].value = this.innerHTML; saveDraft();" onblur="currentBlocks[${index}].value = this.innerHTML; saveDraft();">${block.value}</div>
+                <div id="text-editor-${index}" class="wysiwyg-editor" contenteditable="true" data-placeholder="Skriv din tekst her..." oninput="currentBlocks[${index}].value = this.innerHTML; saveDraft();" onblur="currentBlocks[${index}].value = this.innerHTML; saveDraft();">${block.value}</div>
             `;
         } else if (block.type === 'file') {
             let previewHtml = '';
@@ -728,7 +814,7 @@ function renderBlocks() {
                 ytPreview = `<iframe src="${embedUrl}" style="width: 100%; height: 200px; margin-top: 10px; border-radius: 6px;" frameborder="0" allowfullscreen></iframe>`;
             }
             body = `
-                <input type="text" placeholder="Indsæt YouTube URL..." value="${block.value}" oninput="currentBlocks[${index}].value = this.value; saveDraft();" onchange="currentBlocks[${index}].value = this.value; renderBlocks(); saveDraft();">
+                <input type="text" placeholder="Indsæt YouTube URL..." value="${escapeAttr(block.value)}" oninput="currentBlocks[${index}].value = this.value; saveDraft();" onchange="currentBlocks[${index}].value = this.value; renderBlocks(); saveDraft();">
                 ${ytPreview}
             `;
         } else if (block.type === 'quiz') {
@@ -737,7 +823,7 @@ function renderBlocks() {
                 optsHtml += `
                     <div class="quiz-option">
                         <input type="radio" name="quiz_correct_${index}" ${optIndex === block.value.correctIndex ? 'checked' : ''} onchange="currentBlocks[${index}].value.correctIndex = ${optIndex}; saveDraft();">
-                        <input type="text" value="${opt}" oninput="updateQuizOption(${index}, ${optIndex}, this.value)" onchange="updateQuizOption(${index}, ${optIndex}, this.value)" placeholder="Svarmulighed">
+                        <input type="text" value="${escapeAttr(opt)}" oninput="updateQuizOption(${index}, ${optIndex}, this.value)" onchange="updateQuizOption(${index}, ${optIndex}, this.value)" placeholder="Svarmulighed">
                         <button type="button" class="btn-remove" style="background:#dc3545;" onclick="removeQuizOption(${index}, ${optIndex})" title="Slet mulighed">✖</button>
                     </div>
                 `;
